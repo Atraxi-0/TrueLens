@@ -1,9 +1,3 @@
-
----
-
-### ✅ HTML VERSION (for GitHub README rendering)
-
-```html
 <h1>📰 TrueLens: Fake News Detection for Indian Media</h1>
 
 <p>TrueLens is an AI-powered web application that detects fake news from real news using a machine learning model trained on Indian datasets. It provides a REST API and a user-friendly React frontend for live predictions.</p>
