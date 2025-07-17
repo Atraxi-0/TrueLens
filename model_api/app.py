@@ -6,7 +6,6 @@ from sample_news import get_random_sample
 app = Flask(__name__)
 CORS(app)
 
-# Load model and vectorizer
 model = joblib.load('model/model.pkl')
 vectorizer = joblib.load('model/tfidf_vectorizer.pkl')
 
