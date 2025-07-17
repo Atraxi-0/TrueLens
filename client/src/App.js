@@ -1,92 +1,69 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import './App.css';
 
 function App() {
   const [text, setText] = useState('');
-  const [prediction, setPrediction] = useState(null);
+  const [result, setResult] = useState('');
   const [confidence, setConfidence] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState([]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setLoading(true);
-    setPrediction(null);
+  const handleChange = (e) => {
+    setText(e.target.value);
+    setResult('');
     setConfidence(null);
+  };
 
-    try {
-      const res = await axios.post('http://127.0.0.1:5000/predict', { text });
-      setPrediction(res.data.prediction);
-      setConfidence(res.data.confidence);
-
-      setHistory(prev => [
-        ...prev,
-        {
-          text,
-          prediction: res.data.prediction,
-          confidence: res.data.confidence
-        }
-      ]);
-    } catch (err) {
-      console.error('Error predicting:', err);
-      alert('Failed to get prediction.');
+  const handleSubmit = async () => {
+    if (!text.trim()) {
+      setResult('⚠️ Please enter some news text');
+      return;
     }
 
-    setLoading(false);
+    try {
+      const response = await axios.post('http://localhost:5000/predict', { text });
+      const data = response.data;
+
+      if (data && data.prediction) {
+        setResult(data.prediction === 'REAL' ? '🧠 Real News' : '🚨 Fake News');
+        setConfidence(`Confidence: ${(data.confidence * 100).toFixed(2)}%`);
+      } else {
+        setResult('❌ Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Prediction error:', error);
+      setResult('❌ Server error. Please try again.');
+    }
+  };
+
+  const fetchSample = async (label) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/sample/${label}`);
+      setText(res.data.text);
+      setResult('');
+      setConfidence(null);
+    } catch (error) {
+      console.error('Sample fetch error:', error);
+      setResult('❌ Could not fetch sample news');
+    }
   };
 
   return (
-    <div className="App">
-      <h2>📰 TrueLens: Fake News Detector</h2>
-
-      <div>
-        <button onClick={() => setText("Prime Minister announces new AI policy for schools.")}>
-          Try Real News
-        </button>
-        <button onClick={() => setText("Aliens were spotted running Parliament in New Delhi.")}>
-          Try Fake News
-        </button>
+    <div style={{ padding: 20 }}>
+      <h2>📰 Fake News Detector</h2>
+      <textarea
+        rows="6"
+        cols="60"
+        placeholder="Paste or type your news here..."
+        value={text}
+        onChange={handleChange}
+      />
+      <br />
+      <button onClick={handleSubmit}>Check News</button>{' '}
+      <button onClick={() => fetchSample('real')}>Try Real News</button>{' '}
+      <button onClick={() => fetchSample('fake')}>Try Fake News</button>
+      <div style={{ marginTop: 20, fontSize: '18px' }}>
+        {result && <p><strong>{result}</strong></p>}
+        {confidence && <p>{confidence}</p>}
       </div>
-
-      <form onSubmit={handleSubmit}>
-        <textarea
-          rows="8"
-          cols="60"
-          placeholder="Paste your news article here..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          required
-        />
-        <br />
-        <button type="submit">Check News</button>
-      </form>
-
-      {loading && <p>🔄 Checking for fake news...</p>}
-
-      {prediction !== null && (
-        <div className="result" style={{ color: prediction === 'FAKE' ? 'red' : 'green', fontWeight: 'bold' }}>
-          <h3>Result: {prediction === 'FAKE' ? '🛑 Fake News' : '✅ Real News'}</h3>
-          <p>Confidence: {confidence}</p>
-        </div>
-      )}
-
-      {history.length > 0 && (
-        <div className="history">
-          <h3>🧾 Prediction History</h3>
-          <ul>
-            {history.map((item, index) => (
-              <li key={index}>
-                <span style={{ fontWeight: 'bold' }}>
-                  {item.prediction === 'FAKE' ? '🛑' : '✅'} {item.prediction}
-                </span>{" "}
-                ({item.confidence}) → "{item.text.slice(0, 50)}..."
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

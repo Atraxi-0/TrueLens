@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
+from sample_news import get_random_sample
 
 app = Flask(__name__)
 CORS(app)
@@ -17,12 +18,9 @@ def predict():
     if not text.strip():
         return jsonify({'error': 'No input text provided'}), 400
 
-    # Transform text using vectorizer
     text_vector = vectorizer.transform([text])
-
-    # Make prediction
-    prediction = model.predict(text_vector)[0]  # 0 or 1
-    prob = model.predict_proba(text_vector)[0].max()  # max confidence
+    prediction = model.predict(text_vector)[0]
+    prob = model.predict_proba(text_vector)[0].max()
 
     result = {
         'prediction': 'FAKE' if prediction == 1 else 'REAL',
@@ -30,6 +28,20 @@ def predict():
     }
 
     return jsonify(result)
+
+@app.route('/sample/<label>', methods=['GET'])
+def sample_news(label):
+    try:
+        if label == 'fake':
+            sample = get_random_sample(1)
+        elif label == 'real':
+            sample = get_random_sample(0)
+        else:
+            return jsonify({'error': 'Invalid label'}), 400
+
+        return jsonify({'text': sample})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
